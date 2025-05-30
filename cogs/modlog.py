@@ -50,13 +50,12 @@ class Modlog(commands.Cog):
                 description=f"A new channel has been created:\n"
                             f"**Name**: {channel.name}\n"
                             f"**ID**: {channel.id}\n"
-                            f"**Type**: {channel.type}\n",
+                            f"**Type**: {channel.type}",
                 color=discord.Color.brand_green()
             )
             await mod_channel.send(embed=embed)
         else:
             logging.error(f"[Channel Created] Failed to send modlog: channel not found")
-            return
 
     # channel deletion listener
     @commands.Cog.listener()
@@ -69,13 +68,12 @@ class Modlog(commands.Cog):
                 description=f"A channel has been deleted:\n"
                             f"**Name**: {channel.name}\n"
                             f"**ID**: {channel.id}\n"
-                            f"**Type**: {channel.type}\n",
+                            f"**Type**: {channel.type}",
                 color=discord.Color.brand_red()
             )
             await mod_channel.send(embed=embed)
         else:
             logging.error(f"[Channel Deleted] Failed to send modlog: channel not found")
-            return
 
     # channel update listener
     @commands.Cog.listener()
@@ -98,7 +96,6 @@ class Modlog(commands.Cog):
                 await mod_channel.send(embed=embed)
         else:
             logging.error(f"[Channel Updated] Failed to send modlog: channel not found")
-            return
 
     # role creation listener
     @commands.Cog.listener()
@@ -120,7 +117,7 @@ class Modlog(commands.Cog):
                             f"**Hoisted**: {role.hoist}\n"
                             f"**Position**: {role.position}\n"
                             f"**Managed**: {role.managed}\n"
-                            f"**Created At**: <t:{unix_time}:R>\n",
+                            f"**Created At**: <t:{unix_time}:R>",
                 color=discord.Color.brand_green()
             )
             await mod_channel.send(embed=embed)
@@ -155,17 +152,35 @@ class Modlog(commands.Cog):
                 if added:
                     embed.add_field(
                         name="Added Permissions",
-                        value="\n".join(f":green_square: `{perm}`" for perm in added),
+                        value="\n".join(f":green_square: `{perm}`" for perm in added), # this adds a green square for each added perm
                         inline=False
                     )
                 if removed:
                     embed.add_field(
                         name="Removed Permissions",
-                        value="\n".join(f":red_square: `{perm}`" for perm in removed),
+                        value="\n".join(f":red_square: `{perm}`" for perm in removed), # this adds a red square for each removed perm
                     )
 
             if len(embed.fields) > 0:
                 await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Role Updated] Failed to send modlog: channel not found")
+
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_guild_role_delete(self, role: discord.Role):
+        mod_channel = self.bot.get_channel(self.channel)
+        if mod_channel:
+            embed = discord.Embed(
+                title="Role Deleted",
+                description=f"**Role Deleted**\n"
+                            f"**Name**: {role.name}\n"
+                            f"**Role ID**: {role.id}",
+                color=discord.Color.brand_red()
+            )
+            await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Role Deleted] Failed to send modlog: channel not found")
 
     @commands.Cog.listener()
     @modlog_verify
@@ -183,14 +198,14 @@ class Modlog(commands.Cog):
                         logging.info(f"[Banned] {user.id} in {guild.name}")
                         embed = discord.Embed(
                             title="Member Banned",
-                            description=f"**Member**: {user.mention}\n**Moderator**: {moderator.mention}\n**Reason**: {reason}",
+                            description=f"**Member**: {user.mention}\n"
+                                        f"**Moderator**: {moderator.mention}\n"
+                                        f"**Reason**: {reason}",
                             color=discord.Color.brand_red()
                         )
                         await mod_channel.send(embed=embed)
                     else:
                         logging.error(f"[Banned] Failed to send modlog: channel not found")
-                        return
-                return
         except Exception as e:
             print(f"Failed to send modlog: {e}")
             logging.error(f"Failed to send modlog: {e}")
