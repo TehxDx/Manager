@@ -227,7 +227,43 @@ class Modlog(commands.Cog):
         else:
             logging.error(f"[Member Updated] Failed to send modlog: channel not found")
 
+    # member join listener
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_member_join(self, member: discord.Member):
+        mod_channel = self.bot.get_channel(self.channel)
+        if mod_channel:
+            unix_time = int(member.created_at.timestamp())
+            joined_time = int(member.joined_at.timestamp())
+            embed = discord.Embed(
+                title="Member Joined",
+                description=f"**Member**: {member.mention}\n"
+                            f"**Member ID**: `{member.id}`\n"
+                            f"**Account Created**: <t:{unix_time}:R>\n"
+                            f"**Joined Server**: <t:{joined_time}:R>\n",
+                color=discord.Color.green()
+            )
+            await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Member Joined] Failed to send modlog: channel not found")
 
+    # member leave listener
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_member_remove(self, member: discord.Member):
+        mod_channel = self.bot.get_channel(self.channel)
+        if mod_channel:
+            unix_time = int(datetime.now().timestamp())
+            embed = discord.Embed(
+                title="Member Left",
+                description=f"**Member**: {member.mention}\n"
+                            f"**Member ID**: `{member.id}`\n"
+                            f"**Left Server**: <t:{unix_time}:R>\n",
+                color=discord.Color.brand_red()
+            )
+            await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Member Left] Failed to send modlog: channel not found")
 
     # member ban listener
     @commands.Cog.listener()
