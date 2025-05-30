@@ -48,6 +48,7 @@ class Admin(commands.Cog):
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str = None):
         try:
             users = self.bot.database.get("banned", [])
+            # insert banned user into the lowDB
             insert = {
                 "discord_id": user.id,
                 "guild_id": interaction.guild.id,
@@ -65,15 +66,14 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(ban_members=True)
     @admin.command(name="unban", description="Unban a user from the server")
     @app_commands.describe(
-        user="The user to unban",
-        reason="The reason for the unban"
+        user="The user to unban"
     )
-    async def unban(self, interaction: discord.Interaction, user: discord.User, reason: str = None):
+    async def unban(self, interaction: discord.Interaction, user: discord.User):
         try:
             banned = self.bot.database.get("banned", [])
             update = [user_list for user_list  in banned if user_list["discord_id"] != user.id]
             self.bot.database["banned"] = update
-            await interaction.guild.unban(user, reason=reason)
+            await interaction.guild.unban(user)
             await interaction.response.send_message(f"User {user.mention} has been unbanned.", ephemeral=True)
         except discord.NotFound or discord.Forbidden:
             await interaction.response.send_message(
@@ -97,6 +97,23 @@ class Admin(commands.Cog):
             user_banned = await self.bot.fetch_user(user["discord_id"])
             embed.add_field(name=f"{user_banned.name} | {user_banned.id}", value=f"Reason: {user['reason']}")
 
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(kick_members=True)
+    @admin.command(name="listkicked", description="List all kicked users")
+    async def listkicked(self, interaction: discord.Interaction):
+        kicked = self.bot.database.get("kicked", [])
+        if not kicked:
+            return await interaction.response.send_message("There are no kicked users.", ephemeral=True)
+        embed = discord.Embed(
+            title="List of Kicked Users",
+            description="List of all kicked users in this server.",
+            color=discord.Color.yellow()
+        )
+        for user in kicked[:20]:
+            user_kicked = await self.bot.fetch_user(user["discord_id"])
+            embed.add_field(name=f"{user_kicked.name} | {user_kicked.id}", value=f"Reason: {user['reason']}")
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
