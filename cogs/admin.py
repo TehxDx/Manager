@@ -9,13 +9,15 @@ class Admin(commands.Cog):
 
     # admin subgroup
     admin = app_commands.Group(name="admin", description="Admin Commands")
+    admin_commands = app_commands.Group(name="commands", description="Kick/Ban", parent=admin)
+    admin_list = app_commands.Group(name="list", description="Ban/Kick List", parent=admin)
 
     def __init__(self, bot):
         self.bot = bot
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
-    @admin.command(name="kick", description="Kick a user from the server")
+    @admin_commands.command(name="kick", description="Kick a user from the server")
     @app_commands.describe(
         user="The user to kick",
         reason="The reason for the kick"
@@ -40,7 +42,7 @@ class Admin(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
-    @admin.command(name="ban", description="Ban a user from the server")
+    @admin_commands.command(name="ban", description="Ban a user from the server")
     @app_commands.describe(
         user="The user to ban",
         reason="The reason for the ban"
@@ -59,12 +61,12 @@ class Admin(commands.Cog):
             self.bot.database["banned"] = users
             await user.ban(reason=reason)
             await interaction.response.send_message(f"User {user.mention} has been banned.", ephemeral=True)
-        except discord.Forbidden:
+        except discord.Forbidden or discord.NotFound:
             await interaction.response.send_message("I don't have permission to ban this user.", ephemeral=True)
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
-    @admin.command(name="unban", description="Unban a user from the server")
+    @admin_commands.command(name="unban", description="Unban a user from the server")
     @app_commands.describe(
         user="The user to unban"
     )
@@ -83,7 +85,7 @@ class Admin(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
-    @admin.command(name="listbanned", description="List all banned users")
+    @admin_list.command(name="list-banned", description="List all banned users")
     async def listbanned(self, interaction: discord.Interaction):
         banned = self.bot.database.get("banned", [])
         if not banned:
@@ -101,7 +103,7 @@ class Admin(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
-    @admin.command(name="listkicked", description="List all kicked users")
+    @admin_list.command(name="list-kicked", description="List all kicked users")
     async def listkicked(self, interaction: discord.Interaction):
         kicked = self.bot.database.get("kicked", [])
         if not kicked:
