@@ -151,16 +151,17 @@ class Modlog(commands.Cog):
                 added = set(new_perms) - set(old_perms)
                 removed = set(old_perms) - set(new_perms)
 
+                # works as intended, lets make it alittle more visually appealing
                 if added:
                     embed.add_field(
                         name="Added Permissions",
-                        value=", ".join(added),
+                        value="\n".join(f":green_square: {added}"),
                         inline=False
                     )
                 if removed:
                     embed.add_field(
                         name="Removed Permissions",
-                        value=", ".join(removed),
+                        value="\n".join(f":red_square: {removed}"),
                     )
 
             if len(embed.fields) > 0:
