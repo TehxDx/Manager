@@ -155,13 +155,13 @@ class Modlog(commands.Cog):
                 if added:
                     embed.add_field(
                         name="Added Permissions",
-                        value="\n".join(f":green_square: {added}"),
+                        value="\n".join(f":green_square: `{added}`"),
                         inline=False
                     )
                 if removed:
                     embed.add_field(
                         name="Removed Permissions",
-                        value="\n".join(f":red_square: {removed}"),
+                        value="\n".join(f":red_square: `{removed}`"),
                     )
 
             if len(embed.fields) > 0:
