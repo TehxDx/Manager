@@ -166,6 +166,7 @@ class Modlog(commands.Cog):
         else:
             logging.error(f"[Role Updated] Failed to send modlog: channel not found")
 
+    # role deletion listener
     @commands.Cog.listener()
     @modlog_verify
     async def on_guild_role_delete(self, role: discord.Role):
@@ -182,6 +183,53 @@ class Modlog(commands.Cog):
         else:
             logging.error(f"[Role Deleted] Failed to send modlog: channel not found")
 
+    # member update listener
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
+        mod_channel = self.bot.get_channel(self.channel)
+        if mod_channel:
+            embed = discord.Embed(
+                title="Member Updated",
+                description=f"A member has been updated\n"
+                            f"\u200b \n"
+                            f"Member: {after.mention}",
+                color=discord.Color.yellow()
+            )
+
+            if before.nick != after.nick:
+                embed.add_field(
+                    name="Nickname Changed",
+                    value=f"`{before.nick}` → `{after.nick}`", # if a nick name doesnt exist, it shows none... I need to fix
+                    inline=False
+                )
+
+            if before.roles != after.roles:
+                # compare roles to catch changes
+                added_roles = set(after.roles) - set(before.roles)
+                removed_roles = set(before.roles) - set(after.roles)
+
+                if added_roles:
+                    embed.add_field(
+                        name="Roles Added",
+                        value="\n".join(f":green_square: {role.mention}" for role in added_roles), # adds a green square for each new role added
+                        inline=False
+                    )
+                if removed_roles:
+                    embed.add_field(
+                        name="Roles Removed",
+                        value="\n".join(f":red_square: {role.mention}" for role in removed_roles), # adds a red square for each role removed
+                        inline=False
+                    )
+
+            if len(embed.fields) > 0:
+                await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Member Updated] Failed to send modlog: channel not found")
+
+
+
+    # member ban listener
     @commands.Cog.listener()
     @modlog_verify
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
