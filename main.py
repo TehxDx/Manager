@@ -33,6 +33,7 @@ class ManagerBot(commands.Bot):
         self.config = {
             "modlog": bool(os.getenv("MOD_ENABLED")),
             "modlog_channel": int(os.getenv("MOD_CHANNEL")),
+            "modlog_guild": int(os.getenv("MOD_GUILD")),
             "botname": os.getenv("BOTNAME")
         }
         self.database = LowDB("db.json")
