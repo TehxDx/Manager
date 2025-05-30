@@ -45,6 +45,7 @@ class Modlog(commands.Cog):
     async def on_guild_channel_create(self, channel: discord.abc.GuildChannel):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Channel Created] {channel.id} created in {channel.guild.name}")
             embed = discord.Embed(
                 title="Channel Created",
                 description=f"A new channel has been created:\n"
@@ -63,6 +64,7 @@ class Modlog(commands.Cog):
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Channel Deleted] {channel.id} deleted in {channel.guild.name}")
             embed = discord.Embed(
                 title="Channel Deleted",
                 description=f"A channel has been deleted:\n"
@@ -81,6 +83,7 @@ class Modlog(commands.Cog):
     async def on_guild_channel_update(self, before: discord.abc.GuildChannel, after: discord.abc.GuildChannel):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Channel Updated] {before.id} updated in {before.guild.name}")
             embed = discord.Embed(
                 title="Channel Updated",
                 description="A channel has been updated",
@@ -103,6 +106,7 @@ class Modlog(commands.Cog):
     async def on_guild_role_create(self, role: discord.Role):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Role Created] {role.id} created in {role.guild.name}")
             unix_time = int(role.created_at.timestamp())
             embed = discord.Embed(
                 title="Role Created",
@@ -172,6 +176,7 @@ class Modlog(commands.Cog):
     async def on_guild_role_delete(self, role: discord.Role):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Role Deleted] {role.id} deleted in {role.guild.name}")
             embed = discord.Embed(
                 title="Role Deleted",
                 description=f"**Role Deleted**\n"
@@ -233,6 +238,7 @@ class Modlog(commands.Cog):
     async def on_member_join(self, member: discord.Member):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Member Joined] {member.id} joined {member.guild.name}")
             unix_time = int(member.created_at.timestamp())
             joined_time = int(member.joined_at.timestamp())
             embed = discord.Embed(
@@ -253,6 +259,7 @@ class Modlog(commands.Cog):
     async def on_member_remove(self, member: discord.Member):
         mod_channel = self.bot.get_channel(self.channel)
         if mod_channel:
+            logging.info(f"[Member Left] {member.id} left {member.guild.name}")
             unix_time = int(datetime.now().timestamp())
             embed = discord.Embed(
                 title="Member Left",
@@ -269,30 +276,113 @@ class Modlog(commands.Cog):
     @commands.Cog.listener()
     @modlog_verify
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
-        # waiting for audit log to update
-        await asyncio.sleep(2)
-        try:
-            async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
-                if entry.target.id == user.id:
-                    moderator = entry.user
-                    reason = entry.reason or "No reason provided."
+        async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.ban):
+            # who banned the user
+            if entry.target.id == user.id:
+                moderator = entry.user
+                reason = entry.reason or "No reason provided."
 
-                    mod_channel = self.bot.get_channel(self.channel)
-                    if mod_channel:
-                        logging.info(f"[Banned] {user.id} in {guild.name}")
-                        embed = discord.Embed(
-                            title="Member Banned",
-                            description=f"**Member**: {user.mention}\n"
-                                        f"**Moderator**: {moderator.mention}\n"
-                                        f"**Reason**: {reason}",
-                            color=discord.Color.brand_red()
-                        )
-                        await mod_channel.send(embed=embed)
-                    else:
-                        logging.error(f"[Banned] Failed to send modlog: channel not found")
-        except Exception as e:
-            print(f"Failed to send modlog: {e}")
-            logging.error(f"Failed to send modlog: {e}")
+                mod_channel = self.bot.get_channel(self.channel)
+                if mod_channel:
+                    logging.info(f"[Banned] {user.id} in {guild.name}")
+                    embed = discord.Embed(
+                        title="Member Banned",
+                        description=f"**Member**: {user.mention}\n"
+                                    f"**Banned By**: {moderator.mention} | `{moderator.id}`\n"
+                                    f"**Reason**: {reason}",
+                        color=discord.Color.brand_red()
+                    )
+                    await mod_channel.send(embed=embed)
+                else:
+                    logging.error(f"[Banned] Failed to send modlog: channel not found")
+
+    # member unban listener
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_member_unban(self, guild: discord.Guild, user: discord.User):
+        mod_channel = self.bot.get_channel(self.channel)
+        async for entry in guild.audit_logs(limit=1, action=discord.AuditLogAction.unban):
+            if entry.target.id == user.id:
+                # who unbanned the user
+                moderator = entry.user
+                if mod_channel:
+                    logging.info(f"[Unbanned] {user.id} in {guild.name}")
+                    embed = discord.Embed(
+                        title="Member Unbanned",
+                        description=f"**Member**: {user.mention}\n"
+                                    f"**Unbanned By**: {moderator.mention} | `{moderator.id}`",
+                        color=discord.Color.green()
+                    )
+                    await mod_channel.send(embed=embed)
+                else:
+                    logging.error(f"[Unbanned] Failed to send modlog: channel not found")
+
+    # now lets watch other audit log entries
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_audit_log_entry_create(self, entry: discord.AuditLogEntry):
+        """
+            Placeholder for future audit log entries
+
+            Plans - Kicks, and timeouts, but I need to figure out what else I can pull
+        """
+        return
+
+    # message deletes
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_message_delete(self, message: discord.Message):
+        # no need to log the bot
+        if message.author.bot:
+            return
+
+        mod_channel = self.bot.get_channel(self.channel)
+        if mod_channel:
+            logging.info(f"[Message Deleted] {message.id} deleted in {message.guild.name}")
+            embed = discord.Embed(
+                title="Message Deleted",
+                description=f"**Message Deleted**\n"
+                            f"**Message ID**: `{message.id}`\n"
+                            f"**Message Author**: {message.author.mention} | `{message.author.id}`\n"
+                            f"**Message Channel**: {message.channel.mention}\n"
+                            f"\u200b \n"
+                            f"**Message Content**:\n"
+                            f"```{message.content}```", # what they deleted
+                color=discord.Color.red()
+            )
+            await mod_channel.send(embed=embed)
+        else:
+            logging.error(f"[Message Deleted] Failed to send modlog: channel not found")
+
+    # message edit listener
+    @commands.Cog.listener()
+    @modlog_verify
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        # ignore the bot
+        if before.author.bot:
+            return
+
+        if before.content != after.content:
+            mod_channel = self.bot.get_channel(self.channel)
+            if mod_channel:
+                logging.info(f"[Message Edited] {before.id} edited in {before.guild.name}")
+                embed = discord.Embed(
+                    title="Message Edited",
+                    description=f"**Message Edited**\n"
+                                f"**Message ID**: `{before.id}`\n"
+                                f"**Message Author**: {before.author.mention} | `{before.author.id}`\n"
+                                f"**Message Channel**: {before.channel.mention}\n"
+                                f"\u200b \n"
+                                f"**Before**:\n"
+                                f"```{before.content}```\n" # what was the content before
+                                f"\u200b \n"
+                                f"**After**:\n"
+                                f"```{after.content}```", # the new content now
+                    color=discord.Color.yellow()
+                )
+                await mod_channel.send(embed=embed)
+            else:
+                logging.error(f"[Message Edited] Failed to send modlog: channel not found")
 
 
 async def setup(bot):
