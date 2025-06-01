@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
+from lib.embed_build import embed_loader
 
 class Admin(commands.Cog):
 
@@ -15,6 +16,7 @@ class Admin(commands.Cog):
     admin_action = app_commands.Group(name="action", description="Kick/Ban/Timeout", parent=admin)
     admin_remove = app_commands.Group(name="remove", description="Ban/Timeout", parent=admin)
     admin_list = app_commands.Group(name="list", description="Ban/Kick List", parent=admin)
+    admin_embed = app_commands.Group(name="embed", description="Admin Embeds", parent=admin)
 
     def __init__(self, bot):
         self.bot = bot
@@ -36,7 +38,7 @@ class Admin(commands.Cog):
         user="The user to kick",
         reason="The reason for the kick"
     )
-    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str = None):
+    async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
             # insert kicked user into the lowDB
             users = self.bot.database.get("kicked", [])
@@ -44,7 +46,8 @@ class Admin(commands.Cog):
                 "discord_id": user.id,
                 "guild_id": interaction.guild.id,
                 "reason": reason,
-                "kicked_by": interaction.user.id
+                "kicked_by": interaction.user.id,
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
             }
             users.append(insert)
             self.bot.database["kicked"] = users
@@ -64,7 +67,7 @@ class Admin(commands.Cog):
         user="The user to ban",
         reason="The reason for the ban"
     )
-    async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str = None):
+    async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
             users = self.bot.database.get("banned", [])
             # insert banned user into the lowDB
@@ -72,7 +75,8 @@ class Admin(commands.Cog):
                 "discord_id": user.id,
                 "guild_id": interaction.guild.id,
                 "reason": reason,
-                "banned_by": interaction.user.id
+                "banned_by": interaction.user.id,
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
             }
             users.append(insert)
             self.bot.database["banned"] = users
@@ -87,7 +91,7 @@ class Admin(commands.Cog):
     # unban - unbans a user and removes them from banned in lowDB
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
-    @admin_remove.command(name="unban", description="Unban a user from the server")
+    @admin_remove.command(name="ban", description="Unban a user from the server")
     @app_commands.describe(
         user="Discord ID"
     )
@@ -144,6 +148,7 @@ class Admin(commands.Cog):
                 length = datetime.timedelta(days=28, seconds=-30)
             # lets convert the timestamp to unix and int it
             unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) + length).timestamp())
+
             timeouts = self.bot.database.get("timeouts", [])
             # lowDB structure
             insert = {
@@ -151,7 +156,8 @@ class Admin(commands.Cog):
                 "guild_id": interaction.guild.id,
                 "reason": reason,
                 "timeout_by": interaction.user.id,
-                "timeout_until": unix_timestamp
+                "timeout_until": unix_timestamp,
+                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
             }
             timeouts.append(insert)
             self.bot.database["timeouts"] = timeouts
@@ -195,7 +201,14 @@ class Admin(commands.Cog):
         )
         for user in banned[:20]:
             user_banned = await self.bot.fetch_user(user["discord_id"])
-            embed.add_field(name=f"{user_banned.name} | {user_banned.id}", value=f"Reason: {user['reason']}")
+            banned_by = await self.bot.fetch_user(user["banned_by"])
+            embed.add_field(
+                name=f"{user_banned.name}",
+                value=f"UserID: `{user_banned.id}`\n"
+                      f"Reason: `{user['reason']}`\n"
+                      f"Banned by: {banned_by.mention} | `{banned_by.id}`\n"
+                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
+            )
 
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
@@ -215,7 +228,14 @@ class Admin(commands.Cog):
         )
         for user in kicked[:20]:
             user_kicked = await self.bot.fetch_user(user["discord_id"])
-            embed.add_field(name=f"{user_kicked.name} | {user_kicked.id}", value=f"Reason: {user['reason']}")
+            kicked_by = await self.bot.fetch_user(user["kicked_by"])
+            embed.add_field(
+                name=f"{user_kicked.name}",
+                value=f"UserID: `{user_kicked.id}`\n"
+                      f"Reason: `{user['reason']}`\n"
+                      f"Kicked by: {kicked_by.mention} | `{kicked_by.id}`\n"
+                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
+            )
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
     # timeouts
@@ -234,8 +254,33 @@ class Admin(commands.Cog):
         )
         for user in timeouts[:20]:
             user_timeout = await self.bot.fetch_user(user["discord_id"])
-            embed.add_field(name=f"{user_timeout.name} | {user_timeout.id}", value=f"Reason: {user['reason']}")
+            timeout_by = await self.bot.fetch_user(user["timeout_by"])
+            embed.add_field(
+                name=f"{user_timeout.name}",
+                value=f"UserID: {user_timeout.id}\n"
+                      f"Reason: {user['reason']}\n"
+                      f"Timeout by: {timeout_by.mention} | `{timeout_by.id}`\n"
+                      f"Timeout until: <t:{int(user['timeout_until'])}:F>\n"
+                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
+            )
         return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @admin_embed.command(name="post", description="Create an embed")
+    @app_commands.describe(
+        name="The name of the embed"
+    )
+    async def embed(self, interaction: discord.Interaction, name: str):
+        fetch = embed_loader(name=name)
+        if fetch:
+            logging.info(f"Embed {name} created by {interaction.user.name}")
+            return await interaction.response.send_message(embed=fetch)
+        else:
+            logging.error(f"Embed {name} not found")
+            return await interaction.response.send_message("Embed not found.", ephemeral=True)
+
+
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
