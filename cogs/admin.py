@@ -142,9 +142,20 @@ class Admin(commands.Cog):
             if length == datetime.timedelta(days=28):
                 # because if you put exactly 28 days, the api will kick it out
                 length = datetime.timedelta(days=28, seconds=-30)
-            await user.timeout(length, reason=reason)
             # lets convert the timestamp to unix and int it
             unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) + length).timestamp())
+            timeouts = self.bot.database.get("timeouts", [])
+            # lowDB structure
+            insert = {
+                "discord_id": user.id,
+                "guild_id": interaction.guild.id,
+                "reason": reason,
+                "timeout_by": interaction.user.id,
+                "timeout_until": unix_timestamp
+            }
+            timeouts.append(insert)
+            self.bot.database["timeouts"] = timeouts
+            await user.timeout(length, reason=reason)
             logging.info(f"User {user.name} has been timed out by {interaction.user.name} for reason: {reason}")
             return await interaction.response.send_message(
                 f"User {user.mention} has been timed out until <t:{unix_timestamp}:F>.",
@@ -168,11 +179,11 @@ class Admin(commands.Cog):
                 "An error occurred while trying to timeout this user.", ephemeral=True
             )
 
-    # list-banned
+    # bans
     # grabs all the data from a user in banned lowDB
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
-    @admin_list.command(name="list-banned", description="List all banned users")
+    @admin_list.command(name="bans", description="List all banned users")
     async def listbanned(self, interaction: discord.Interaction):
         banned = self.bot.database.get("banned", [])
         if not banned:
@@ -188,11 +199,11 @@ class Admin(commands.Cog):
 
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    # list-kicked
+    # kicked
     # grabs all the kicked users from kicked in lowDB
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
-    @admin_list.command(name="list-kicked", description="List all kicked users")
+    @admin_list.command(name="kicked", description="List all kicked users")
     async def listkicked(self, interaction: discord.Interaction):
         kicked = self.bot.database.get("kicked", [])
         if not kicked:
@@ -205,6 +216,25 @@ class Admin(commands.Cog):
         for user in kicked[:20]:
             user_kicked = await self.bot.fetch_user(user["discord_id"])
             embed.add_field(name=f"{user_kicked.name} | {user_kicked.id}", value=f"Reason: {user['reason']}")
+        return await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    # timeouts
+    # grabs all timeouts of users from lowDB
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(moderate_members=True)
+    @admin_list.command(name="timeouts", description="List all timed out users")
+    async def listtimeouts(self, interaction: discord.Interaction):
+        timeouts = self.bot.database.get("timeouts", [])
+        if not timeouts:
+            return await interaction.response.send_message("There are no timed out users.", ephemeral=True)
+        embed = discord.Embed(
+            title="List of Timed Out Users",
+            description="List of all timed out users in this server.",
+            color=discord.Color.orange()
+        )
+        for user in timeouts[:20]:
+            user_timeout = await self.bot.fetch_user(user["discord_id"])
+            embed.add_field(name=f"{user_timeout.name} | {user_timeout.id}", value=f"Reason: {user['reason']}")
         return await interaction.response.send_message(embed=embed, ephemeral=True)
 
 async def setup(bot):
