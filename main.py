@@ -9,7 +9,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import os, platform, asyncio
 import logging
-from lib.lowDB import LowDB
+from lib.database.database import ManagerDB
 
 # setup logging
 logging.basicConfig(
@@ -31,15 +31,17 @@ class ManagerBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = {
-            "modlog": bool(os.getenv("MOD_ENABLED")),
+            "modlog": os.getenv("MOD_ENABLED"),
             "modlog_channel": int(os.getenv("MOD_CHANNEL")),
             "modlog_guild": int(os.getenv("MOD_GUILD")),
             "botname": os.getenv("BOTNAME")
         }
-        self.database = LowDB("db.json")
-        # LowDB - i am rebuilding it | original author: iresharma
-        self.database.addMetadata("created_by", "iresharma")
-        self.database.addMetadata("version", "0.2")
+        self.database = ManagerDB()
+
+        """
+            Note: Removal of lowDB support - Since it has limitations at the moment and requires me to rebuild it,
+            lowDB will have to be a project for another time
+        """
 
         logging.info(self.config)
 
