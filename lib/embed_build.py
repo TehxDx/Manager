@@ -2,9 +2,9 @@ import discord
 import json
 import logging
 
-def embed_loader(name: str) -> discord.Embed | None:
+def embed_loader(name: str, file: str) -> discord.Embed | None:
     # need to open the messages file to get all embeds in it
-    with open(f"embeds/messages.json", "r") as f:
+    with open(f"{file}", "r") as f:
         data = json.load(f)
 
     try:
