@@ -1,0 +1,29 @@
+{
+  "ticket": {
+    "title": ":tickets: Create a ticket :tickets:",
+    "description": "**Please read all the guidelines below**\n\n- Rule1\n- Rule 2\n- Rule 3\n- Rule 4",
+    "color": "9c0402",
+    "fields": [],
+    "footer": {
+      "text": "Ticket System"
+    }
+  },
+  "bans": {
+    "title": ":stop_sign: Banned Users",
+    "description": "# Last 5 Bans",
+    "color": "fc0303",
+    "fields": []
+  },
+  "kicks": {
+    "title": ":boot: Kicked Users",
+    "description": "# Last 5 Kicks",
+    "color": "fc0303",
+    "fields": []
+  },
+  "timeouts": {
+    "title": ":hourglass_flowing_sand: Timed out users",
+    "description": "# Last 5 Timeouts",
+    "color": "ebf702",
+    "fields": []
+  }
+}
