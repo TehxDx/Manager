@@ -2,12 +2,13 @@
     Admin Commands
 """
 import datetime
-
+import os
 import discord
 from discord.ext import commands
 from discord import app_commands
 import logging
 from lib.embed_build import embed_loader
+from views.ticket import TicketView
 
 class Admin(commands.Cog):
 
@@ -40,18 +41,15 @@ class Admin(commands.Cog):
     )
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
-            # insert kicked user into the lowDB
-            users = self.bot.database.get("kicked", [])
-            insert = {
-                "discord_id": user.id,
-                "guild_id": interaction.guild.id,
-                "reason": reason,
-                "kicked_by": interaction.user.id,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
-            }
-            users.append(insert)
-            self.bot.database["kicked"] = users
             await user.kick(reason=reason)
+            self.bot.database.add_user_kicked(
+                discord_id=user.id,
+                discord_name=user.name,
+                guild_id=interaction.guild.id,
+                reason=reason,
+                kicked_by=interaction.user.id,
+                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            )
             logging.info(f"User {user.name} has been kicked by {interaction.user.name} for reason: {reason}")
             await interaction.response.send_message(f"User {user.mention} has been kicked.", ephemeral=True)
         except discord.Forbidden or discord.NotFound:
@@ -69,18 +67,15 @@ class Admin(commands.Cog):
     )
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
-            users = self.bot.database.get("banned", [])
-            # insert banned user into the lowDB
-            insert = {
-                "discord_id": user.id,
-                "guild_id": interaction.guild.id,
-                "reason": reason,
-                "banned_by": interaction.user.id,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
-            }
-            users.append(insert)
-            self.bot.database["banned"] = users
             await user.ban(reason=reason)
+            self.bot.database.add_user_banned(
+                guild_id=interaction.guild.id,
+                discord_id=user.id,
+                discord_name=user.name,
+                reason=reason,
+                banned_by=interaction.user.id,
+                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            )
             logging.info(f"User {user.name} has been banned by {interaction.user.name} for reason: {reason}")
             await interaction.response.send_message(f"User {user.mention} has been banned.", ephemeral=True)
         except discord.Forbidden or discord.NotFound:
@@ -148,20 +143,16 @@ class Admin(commands.Cog):
                 length = datetime.timedelta(days=28, seconds=-30)
             # lets convert the timestamp to unix and int it
             unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) + length).timestamp())
-
-            timeouts = self.bot.database.get("timeouts", [])
-            # lowDB structure
-            insert = {
-                "discord_id": user.id,
-                "guild_id": interaction.guild.id,
-                "reason": reason,
-                "timeout_by": interaction.user.id,
-                "timeout_until": unix_timestamp,
-                "timestamp": datetime.datetime.now(datetime.timezone.utc).timestamp()
-            }
-            timeouts.append(insert)
-            self.bot.database["timeouts"] = timeouts
             await user.timeout(length, reason=reason)
+            self.bot.database.add_user_timeout(
+                discord_id=user.id,
+                discord_name=user.name,
+                guild_id=interaction.guild.id,
+                reason=reason,
+                timeout_by=interaction.user.id,
+                timeout_until=unix_timestamp,
+                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            )
             logging.info(f"User {user.name} has been timed out by {interaction.user.name} for reason: {reason}")
             return await interaction.response.send_message(
                 f"User {user.mention} has been timed out until <t:{unix_timestamp}:F>.",
@@ -186,101 +177,148 @@ class Admin(commands.Cog):
             )
 
     # bans
-    # grabs all the data from a user in banned lowDB
+    # grabs the last 5 banned from the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
     @admin_list.command(name="bans", description="List all banned users")
     async def listbanned(self, interaction: discord.Interaction):
-        banned = self.bot.database.get("banned", [])
-        if not banned:
-            return await interaction.response.send_message("There are no banned users.", ephemeral=True)
-        embed = discord.Embed(
-            title="List of Banned Users",
-            description="List of all banned users in this server.",
-            color=discord.Color.brand_red()
-        )
-        for user in banned[:20]:
-            user_banned = await self.bot.fetch_user(user["discord_id"])
-            banned_by = await self.bot.fetch_user(user["banned_by"])
-            embed.add_field(
-                name=f"{user_banned.name}",
-                value=f"UserID: `{user_banned.id}`\n"
-                      f"Reason: `{user['reason']}`\n"
-                      f"Banned by: {banned_by.mention} | `{banned_by.id}`\n"
-                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
-            )
-
-        return await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.response.defer()
+        fetch = self.bot.database.fetch_ban_list(guild_id=interaction.guild.id)
+        if not fetch:
+            return await interaction.followup.send("There is no bans in the database to list.")
+        embed = embed_loader(name="bans", file="embeds/core.json")
+        for item in fetch:
+            try:
+                banned_by = self.bot.get_user(item[5])
+                embed.add_field(
+                    name=f"ID: #{item[0]}",
+                    value=f"User Details:\n`{item[3]}` | `{item[2]}`\n"
+                          f"Banned By: {banned_by.mention} | `{banned_by.id}`\n"
+                          f"Timestamp: <t:{item[6]}:F>\n"
+                          f"Reason: ```{item[4]}```",
+                          inline=False
+                )
+            except discord.Forbidden or discord.NotFound:
+                pass
+            except Exception as e:
+                logging.error(f"Failed to list banned users: {e}")
+        return await interaction.followup.send(embed=embed)
 
     # kicked
-    # grabs all the kicked users from kicked in lowDB
+    # grabs last 5 kicked users from database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
-    @admin_list.command(name="kicked", description="List all kicked users")
+    @admin_list.command(name="kicks", description="List all kicked users")
     async def listkicked(self, interaction: discord.Interaction):
-        kicked = self.bot.database.get("kicked", [])
+        await interaction.response.defer()
+        kicked = self.bot.database.fetch_kick_list(guild_id=interaction.guild.id)
         if not kicked:
-            return await interaction.response.send_message("There are no kicked users.", ephemeral=True)
-        embed = discord.Embed(
-            title="List of Kicked Users",
-            description="List of all kicked users in this server.",
-            color=discord.Color.yellow()
-        )
-        for user in kicked[:20]:
-            user_kicked = await self.bot.fetch_user(user["discord_id"])
-            kicked_by = await self.bot.fetch_user(user["kicked_by"])
-            embed.add_field(
-                name=f"{user_kicked.name}",
-                value=f"UserID: `{user_kicked.id}`\n"
-                      f"Reason: `{user['reason']}`\n"
-                      f"Kicked by: {kicked_by.mention} | `{kicked_by.id}`\n"
-                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
-            )
-        return await interaction.response.send_message(embed=embed, ephemeral=True)
+            return await interaction.followup.send("There is no kicks in the database to list.")
+        embed = embed_loader(name="kicks", file="embeds/core.json")
+        for item in kicked:
+            try:
+                kicked_by = self.bot.get_user(item[5])
+                embed.add_field(
+                    name=f"ID: #{item[0]}",
+                    value=f"User Details:\n`{item[2]}` | `{item[1]}`\n"
+                          f"Kicked By: {kicked_by.mention} | `{kicked_by.id}`\n"
+                          f"Timestamp: <t:{item[6]}:F>\n"
+                          f"Reason: ```{item[4]}```",
+                    inline=False
+                )
+            except discord.Forbidden or discord.NotFound:
+                pass
+            except Exception as e:
+                logging.error(f"Failed to list kicked users: {e}")
+        return await interaction.followup.send(embed=embed)
+
 
     # timeouts
-    # grabs all timeouts of users from lowDB
+    # grabs the last 5 timeouts from the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(moderate_members=True)
     @admin_list.command(name="timeouts", description="List all timed out users")
     async def listtimeouts(self, interaction: discord.Interaction):
-        timeouts = self.bot.database.get("timeouts", [])
+        await interaction.response.defer()
+        timeouts = self.bot.database.fetch_timeout_list(guild_id=interaction.guild.id)
         if not timeouts:
-            return await interaction.response.send_message("There are no timed out users.", ephemeral=True)
-        embed = discord.Embed(
-            title="List of Timed Out Users",
-            description="List of all timed out users in this server.",
-            color=discord.Color.orange()
-        )
-        for user in timeouts[:20]:
-            user_timeout = await self.bot.fetch_user(user["discord_id"])
-            timeout_by = await self.bot.fetch_user(user["timeout_by"])
-            embed.add_field(
-                name=f"{user_timeout.name}",
-                value=f"UserID: {user_timeout.id}\n"
-                      f"Reason: {user['reason']}\n"
-                      f"Timeout by: {timeout_by.mention} | `{timeout_by.id}`\n"
-                      f"Timeout until: <t:{int(user['timeout_until'])}:F>\n"
-                      f"Timestamp: <t:{int(user['timestamp'])}:F>",
-            )
-        return await interaction.response.send_message(embed=embed, ephemeral=True)
+            return await interaction.followup.send("There is no timeouts in the database to list.")
+        embed = embed_loader(name="timeouts", file="embeds/core.json")
+        for item in timeouts:
+            try:
+                timeout_by = self.bot.get_user(item[5])
+                embed.add_field(
+                    name=f"ID: #{item[0]}",
+                    value=f"User Details:\n`{item[2]}` | `{item[1]}`\n"
+                          f"Timeout By: {timeout_by.mention} | `{timeout_by.id}`\n"
+                          f"Timeout Until: <t:{item[6]}:F>\n"
+                          f"Timestamp: <t:{item[7]}:F>\n"
+                          f"Reason: ```{item[4]}```",
+                    inline=False
+                )
+            except discord.Forbidden or discord.NotFound:
+                pass
+            except Exception as e:
+                logging.error(f"Failed to list timeout users: {e}")
+        return await interaction.followup.send(embed=embed)
 
+    # post - embed posting
+    # this requires a custom embed to be set in embeds/messages.json
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_messages=True)
     @admin_embed.command(name="post", description="Create an embed")
     @app_commands.describe(
         name="The name of the embed"
     )
-    async def embed(self, interaction: discord.Interaction, name: str):
-        fetch = embed_loader(name=name)
+    async def embed(self, interaction: discord.Interaction, name: str, channel: discord.TextChannel = None):
+        fetch = embed_loader(name=name, file="embeds/messages.json")
         if fetch:
+            if channel:
+                await interaction.response.send_message(
+                    f"Embed {name} created by {interaction.user.name} in {channel.mention}",
+                    ephemeral=True
+                )
+                return await channel.send(embed=fetch)
             logging.info(f"Embed {name} created by {interaction.user.name}")
             return await interaction.response.send_message(embed=fetch)
         else:
             logging.error(f"Embed {name} not found")
             return await interaction.response.send_message("Embed not found.", ephemeral=True)
 
-
+    # embed help
+    # added a simple help command to creating custom embeds
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @admin_embed.command(name="help", description="Embed Help")
+    async def help(self, interaction: discord.Interaction):
+        message = ("## Embed Helper\n"
+                   "- Locate embeds/messages.json\n"
+                   "☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰\n"
+                   "```json\n"
+                   "{\n"
+                   "  \"example\": {\n"
+                   "    \"title\": \"Example Embed\",\n"
+                   "    \"description\": \"Example Description\",\n"
+                   "    \"color\": \"7c2715\"\n"
+                   "    \"fields\": [\n"
+                   "      {\n"
+                   "        \"name\": \"Name\",\n"
+                   "        \"value\": \"Value\",\n"
+                   "        \"inline\": true\n"
+                   "      },\n"
+                   "    ],\n"
+                   "    \"footer\": {\n"
+                   "      \"text\": \"Footer text here\",\n"
+                   "      \"icon\": \"https://example.com/example.png\"\n"
+                   "    },\n"
+                   "    \"thumbnail\": \"https://example.com/example.png\",\n"
+                   "    \"image\": \"https://example.com/example.png\"\n"
+                   "  }\n"
+                   "}```\n"
+                   "☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰☰\n"
+                   "- Save the above example to the file\n"
+                   "- Use the command `/admin embed post example` to post the embed\n")
+        await interaction.response.send_message(message, ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
