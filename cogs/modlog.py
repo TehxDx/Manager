@@ -1,12 +1,12 @@
 """
     Modlog Cog
 """
-import asyncio
 import discord
 from discord.ext import commands
 import logging
 import functools
 from datetime import datetime
+import os
 
 # was looking for a solution, so code wasnt repetitive, found this on stackoverflow and adjusted to my needs.
 # https://stackoverflow.com/questions/739654/how-to-make-function-decorators-with-optional-arguments/739680#739680
@@ -25,7 +25,7 @@ def modlog_verify(func):
             logging.warning("[ModLog] No guild found in event args")
             return None
 
-        if not self.enabled or guild.id != self.guild:
+        if not guild.id != self.guild:
             return None
 
         return await func(self, *args, **kwargs)
@@ -35,7 +35,6 @@ class Modlog(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.enabled = self.bot.config["modlog"]
         self.channel = self.bot.config["modlog_channel"]
         self.guild = self.bot.config["modlog_guild"]
 
@@ -386,4 +385,11 @@ class Modlog(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(Modlog(bot))
+    # I am struggling with this --- lets do this a round-a-bout way
+    mod_enabled = os.getenv("MOD_ENABLED")
+    return_type = mod_enabled is not None and mod_enabled.lower() == 'true'
+    if return_type is True:
+        logging.info("[ModLog] Logging is enabled")
+        await bot.add_cog(Modlog(bot))
+    else:
+        logging.info("Modlog is disabled")
