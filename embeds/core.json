@@ -1,7 +1,7 @@
 {
   "ticket": {
     "title": ":tickets: Create a ticket :tickets:",
-    "description": "**Please read all the guidelines below**\n\n- Rule1\n- Rule 2\n- Rule 3\n- Rule 4",
+    "description": "**Please read all the guidelines below**\n\n> - Rule 1\n> - Rule 2\n> - Rule 3\n> - Rule 4",
     "color": "9c0402",
     "fields": [],
     "footer": {
