@@ -3,19 +3,22 @@
 > I am here to help you manage your discord guild. Do you need some support in managing your guild as it grows? Lucky you, I am built to be expanded on,
 > featuring rich embed building through the use of JSON.
 # Commands
-- /admin
-- - **action**
-- - - ban
-- - - kick
-- - - timeout
-- - **list**
-- - - bans 
-- - - kicks
-- - - timeouts
-- - **remove**
-- - - ban
-- - **embed**
-- - - help
+- ### /admin
+  - **action**
+    - ban
+    - kick
+    - timeout
+  - **list**
+    - bans 
+    - kicks
+    - timeouts
+  - **remove**
+    - ban
+  - **embed**
+    - help
+
+> [!IMPORTANT]
+> These may change as the bot grows in development. Please keep and eye on the list.
 
 # Features
 **ModLog**  
