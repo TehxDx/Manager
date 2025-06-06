@@ -182,7 +182,7 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(ban_members=True)
     @admin_list.command(name="bans", description="List all banned users")
     async def listbanned(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         fetch = self.bot.database.fetch_ban_list(guild_id=interaction.guild.id)
         if not fetch:
             return await interaction.followup.send("There is no bans in the database to list.")
@@ -210,7 +210,7 @@ class Admin(commands.Cog):
     @app_commands.checks.has_permissions(kick_members=True)
     @admin_list.command(name="kicks", description="List all kicked users")
     async def listkicked(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         kicked = self.bot.database.fetch_kick_list(guild_id=interaction.guild.id)
         if not kicked:
             return await interaction.followup.send("There is no kicks in the database to list.")
@@ -232,14 +232,13 @@ class Admin(commands.Cog):
                 logging.error(f"Failed to list kicked users: {e}")
         return await interaction.followup.send(embed=embed)
 
-
     # timeouts
     # grabs the last 5 timeouts from the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(moderate_members=True)
     @admin_list.command(name="timeouts", description="List all timed out users")
     async def listtimeouts(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=True)
         timeouts = self.bot.database.fetch_timeout_list(guild_id=interaction.guild.id)
         if not timeouts:
             return await interaction.followup.send("There is no timeouts in the database to list.")
@@ -319,6 +318,16 @@ class Admin(commands.Cog):
                    "- Save the above example to the file\n"
                    "- Use the command `/admin embed post example` to post the embed\n")
         await interaction.response.send_message(message, ephemeral=True)
+
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(manage_messages=True)
+    @admin.command(name="purge", description="Select between 1 - 40 messages to delete")
+    async def purge(self, interaction: discord.Interaction, amount: int):
+        await interaction.response.defer(ephemeral=True)
+        if not 1 <= amount <= 40:
+            await interaction.response.send_message("The amount has to be within 1-40", ephemeral=True)
+        purge = await interaction.channel.purge(limit=amount)
+        return await interaction.followup.send(f"I purged {len(purge)} message(s)")
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
