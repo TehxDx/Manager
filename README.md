@@ -23,7 +23,7 @@
   - **embed**
     - help
   - **purge** 
-  - **permissions** [!NOTE] If you are having errors, please use this commands 
+  - **permissions**  _If you are having errors, please use this commands_
 
 > [!IMPORTANT]
 > These may change as the bot grows in development. Please keep an eye on the list.
