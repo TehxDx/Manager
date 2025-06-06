@@ -23,9 +23,10 @@
   - **embed**
     - help
   - **purge** 
+  - **permissions** [!NOTE] If you are having errors, please use this commands 
 
 > [!IMPORTANT]
-> These may change as the bot grows in development. Please keep and eye on the list.
+> These may change as the bot grows in development. Please keep an eye on the list.
 
 # Features
 
