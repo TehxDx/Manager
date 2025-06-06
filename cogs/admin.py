@@ -319,6 +319,7 @@ class Admin(commands.Cog):
                    "- Use the command `/admin embed post example` to post the embed\n")
         await interaction.response.send_message(message, ephemeral=True)
 
+    # purge command to help clean up a channel - limited to 40 but max is 100
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(manage_messages=True)
     @admin.command(name="purge", description="Select between 1 - 40 messages to delete")
@@ -328,6 +329,35 @@ class Admin(commands.Cog):
             await interaction.response.send_message("The amount has to be within 1-40", ephemeral=True)
         purge = await interaction.channel.purge(limit=amount)
         return await interaction.followup.send(f"I purged {len(purge)} message(s)")
+
+    # how to check permissions that the bot needs
+    @app_commands.guild_only()
+    @app_commands.checks.has_permissions(administrator=True)
+    @admin.command(name="permissions", description="Permissions Check for myself")
+    async def permissions(self, interaction: discord.Interaction):
+        required_perms = {
+            "View Channels": interaction.guild.me.guild_permissions.view_channel,
+            "Send Messages": interaction.guild.me.guild_permissions.send_messages,
+            "Manage Channels": interaction.guild.me.guild_permissions.manage_channels,
+            "Kick Members": interaction.guild.me.guild_permissions.kick_members, # important to kick users
+            "Ban Members": interaction.guild.me.guild_permissions.ban_members, # important to ban users
+            "Moderate Members (Timeout)": interaction.guild.me.guild_permissions.moderate_members, # important to timeout
+            "View Audit Log": interaction.guild.me.guild_permissions.view_audit_log, # important to watch audit log to get specific information
+            "Create Instant Invite": interaction.guild.me.guild_permissions.create_instant_invite,
+            "Manage Roles": interaction.guild.me.guild_permissions.manage_roles
+        }
+
+        missing = [name for name, has_perm in required_perms.items() if not has_perm]
+
+        if missing:
+            embed = discord.Embed(
+                title=":no_entry_sign: Missing Bot Permissions",
+                description="\n".join(f"• `{perm}`" for perm in missing),
+                color=self.bot.config["embed_color"]
+            )
+            embed.set_footer(text="Permission Checker - ManagerBot")
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        return await interaction.response.send_message("All permissions are met.", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
