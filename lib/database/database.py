@@ -1,13 +1,22 @@
 """
     I did not like the way lowDB worked, so I am redoing the database and moving to SQLite3
 """
+import os
+import datetime
 import sqlite3
 import logging
+from lib.database.controllers.ban_control import BanController
+from lib.database.controllers.kick_control import KickController
+from lib.database.controllers.timeout_control import TimeoutController
+
+
 class ManagerDB:
 
     def __init__(self):
         self.db_name = "database.db"
+        self.db_schema = "schema/schema.sql"
         self._create_init()
+        self._load_controls()
 
     def _exec_query(self, query, params=(), fetch_one=False, fetch_all=False, commit=False):
         with sqlite3.connect(self.db_name) as conn:
@@ -16,193 +25,32 @@ class ManagerDB:
 
             if commit:
                 conn.commit()
+                logging.info("[+] Committing changes")
             if fetch_one:
+                logging.info("[+] Fetching result")
                 return cursor.fetchone()
             if fetch_all:
+                logging.info("[+] Fetching all results")
                 return cursor.fetchall()
             return cursor.rowcount
 
     def _create_init(self):
+        logging.info("[+] Initializing database")
+        try:
+            with sqlite3.connect(self.db_name) as conn:
+                cursor = conn.cursor()
+                if not os.path.exists(self.db_schema):
+                    logging.error(f"[+] Can not locate {self.db_schema}")
+                    return
+                with open(self.db_schema, 'r') as file:
+                    scheme_data = file.read()
 
-        # lets initialize the banned table
-        ban_table = '''
-                    CREATE TABLE IF NOT EXISTS banned (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        guild_id INTEGER NOT NULL,
-                        discord_id INTEGER NOT NULL,
-                        discord_name TEXT NOT NULL,
-                        reason TEXT,
-                        banned_by INTEGER NOT NULL,
-                        timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now')),
-                        UNIQUE (guild_id, discord_id)
-                    );
-                    '''
-        ban_table_index = '''CREATE INDEX IF NOT EXISTS idx_banned_guild_user ON banned (guild_id, discord_id);'''
-        ban_table_index_2 = '''CREATE INDEX IF NOT EXISTS idx_banned_user ON banned (discord_id);'''
-        self._exec_query(ban_table, commit=True)
-        self._exec_query(ban_table_index, commit=True)
-        self._exec_query(ban_table_index_2, commit=True)
-
-        # lets initialize the kick table
-        kick_table = '''
-                     CREATE TABLE IF NOT EXISTS kicks (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        discord_id INTEGER NOT NULL,
-                        discord_name TEXT NOT NULL,
-                        guild_id INTEGER NOT NULL,
-                        reason TEXT,
-                        kicked_by INTEGER NOT NULL,
-                        timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-                     );
-                     '''
-        kick_table_index = '''CREATE INDEX IF NOT EXISTS idx_kicks_discord_id ON kicks (discord_id);'''
-        kick_table_index_2 = '''CREATE INDEX IF NOT EXISTS idx_kicks_guild_id ON kicks (guild_id);'''
-        kick_table_index_3 = '''CREATE INDEX IF NOT EXISTS idx_kicks_guild_discord_id ON kicks (guild_id, discord_id);'''
-        self._exec_query(kick_table, commit=True)
-        self._exec_query(kick_table_index, commit=True)
-        self._exec_query(kick_table_index_2, commit=True)
-        self._exec_query(kick_table_index_3, commit=True)
-
-        # lets initialize the timeout table
-        timeout_table = '''
-                        CREATE TABLE IF NOT EXISTS timeout (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            discord_id INTEGER NOT NULL,
-                            discord_name TEXT NOT NULL,
-                            guild_id INTEGER NOT NULL,
-                            reason TEXT,
-                            timeout_by INTEGER NOT NULL,
-                            timeout_until INTEGER NOT NULL,
-                            timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-                        );
-                        '''
-        timeout_table_index = '''CREATE INDEX IF NOT EXISTS idx_timeouts_discord_id ON timeout (discord_id);'''
-        timeout_table_index_2 = '''CREATE INDEX IF NOT EXISTS idx_timeouts_guild_id ON timeout (guild_id);'''
-        timeout_table_index_3 = '''CREATE INDEX IF NOT EXISTS idx_timeouts_guild_discord_id ON timeout (guild_id, discord_id);'''
-        timeout_table_index_4 = '''CREATE INDEX IF NOT EXISTS idx_timeouts_timeout_until ON timeout (timeout_until);'''
-        self._exec_query(timeout_table, commit=True)
-        self._exec_query(timeout_table_index, commit=True)
-        self._exec_query(timeout_table_index_2, commit=True)
-        self._exec_query(timeout_table_index_3, commit=True)
-        self._exec_query(timeout_table_index_4, commit=True)
-
-        ticket_setup_table = '''
-                             CREATE TABLE IF NOT EXISTS ticket_setup (
-                                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                guild_id INTEGER NOT NULL,
-                                discord_id INTEGER NOT NULL,
-                                message_id INTEGER NOT NULL,
-                                category INTEGER NOT NULL,
-                                channel INTEGER NOT NULL,
-                                roles TEXT,
-                                timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-                             );
-                             '''
-        ticket_setup_index = '''CREATE INDEX IF NOT EXISTS idx_ticket_id ON ticket_setup (guild_id, discord_id);'''
-        ticket_setup_index2 = '''CREATE INDEX IF NOT EXISTS idx_ticket_message ON ticket_setup (message_id);'''
-        self._exec_query(ticket_setup_table, commit=True)
-        self._exec_query(ticket_setup_index, commit=True)
-
-        ticket_table = '''
-                        CREATE TABLE IF NOT EXISTS tickets (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            guild_id INTEGER NOT NULL,
-                            discord_id INTEGER NOT NULL,
-                            channel INTEGER NOT NULL,
-                            status BOOLEAN NOT NULL CHECK (status IN (0, 1)),
-                            timestamp INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
-                        );
-                       '''
-        ticket_index = '''CREATE INDEX IF NOT EXISTS idx_tickets_guild_id ON tickets (guild_id);'''
-        ticket_index_2 = '''CREATE INDEX IF NOT EXISTS idx_tickets_discord_id ON tickets (discord_id);'''
-        self._exec_query(ticket_table, commit=True)
-        self._exec_query(ticket_index, commit=True)
-        self._exec_query(ticket_index_2, commit=True)
-
-    # add a user to the banned table
-    def add_user_banned(
-            self,
-            guild_id: int,
-            discord_id: int,
-            discord_name: str,
-            reason: str,
-            banned_by: int,
-            timestamp: int
-    ):
-        query = '''
-                INSERT INTO banned (guild_id, discord_id, discord_name, reason, banned_by, timestamp) 
-                VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT (guild_id, discord_id)
-                DO NOTHING;
-                '''
-        self._exec_query(query, (guild_id, discord_id, discord_name, reason, banned_by, timestamp), commit=True)
-
-    # add a user to the kicked table, though, if they are banned and exist in the table, it doesn't need to do anything
-    # though this will change, as unbans do happen, but at the moment its left as is
-    def add_user_kicked(
-            self,
-            guild_id: int,
-            discord_id: int,
-            discord_name: str,
-            reason: str,
-            kicked_by: int,
-            timestamp: int
-    ):
-        query = '''
-                INSERT INTO kicks (discord_id, discord_name, guild_id, reason, kicked_by, timestamp) 
-                VALUES (?, ?, ?, ?, ?, ?);
-                '''
-        self._exec_query(query, (discord_id, discord_name, guild_id, reason, kicked_by, timestamp), commit=True)
-
-    # add a user to the timeout table
-    def add_user_timeout(
-            self,
-            discord_id: int,
-            discord_name: str,
-            guild_id: int,
-            reason: str,
-            timeout_by: int,
-            timeout_until: int,
-            timestamp: int
-    ):
-        query = '''
-                INSERT INTO timeout (discord_id, discord_name, guild_id, reason, timeout_by, timeout_until, timestamp) 
-                VALUES (?, ?, ?, ?, ?, ?, ?);
-                '''
-        self._exec_query(query, (discord_id, discord_name, guild_id, reason, timeout_by, timeout_until, timestamp), commit=True)
-
-    # fetch the last 5 banned
-    def fetch_ban_list(self, guild_id: int):
-        query = '''
-                SELECT * FROM banned 
-                WHERE guild_id = ?
-                ORDER BY id DESC
-                LIMIT 5;
-                '''
-        fetch = self._exec_query(query, (guild_id,), fetch_all=True)
-        return fetch
-
-    # fetch the last 5 kicked
-    def fetch_kick_list(self, guild_id: int):
-        query = '''
-                SELECT * FROM kicks 
-                WHERE guild_id = ?
-                ORDER BY id DESC
-                LIMIT 5;
-                '''
-        fetch = self._exec_query(query, (guild_id,), fetch_all=True)
-        return fetch
-
-    # fetch the last 5 of the timeout list
-    def fetch_timeout_list(self, guild_id: int):
-        query = '''
-                SELECT * FROM timeout
-                WHERE guild_id = ?
-                ORDER BY id DESC
-                LIMIT 5;
-                '''
-        fetch = self._exec_query(query, (guild_id,), fetch_all=True)
-        return fetch
+                cursor.executescript(scheme_data)
+                conn.commit()
+            logging.info("[+] Database initialized")
+        except sqlite3.Error as e:
+            logging.error(f"[!] Database initialization failed: {e}")
+            exit() # temporary placement
 
     # ticket database
     # guild_id, discord_id, message_id, category, channel, roles, timestamp
@@ -212,8 +60,37 @@ class ManagerDB:
                 VALUES (?, ?, ?, ?, ?, ?, ?);
                 '''
         self._exec_query(query, (guild_id, discord_id, message_id, category, channel, roles, timestamp), commit=True)
-        query2 = '''
-                SELECT * FROM ticket_setup
-                WHERE message_id = ?
-                '''
-        return self._exec_query(query2, (message_id,), fetch_all=True)
+        query2 = "SELECT * FROM ticket_setup WHERE message_id = ?"
+        return self._exec_query(query2, (message_id,), fetch_one=True)
+
+    # ticket add_role
+    def ticket_setup_fetch(self, guild_id: int, ticket_id: int):
+        query = "SELECT * FROM ticket_setup WHERE id = ? AND guild_id = ?"
+        fetch = self._exec_query(query, (ticket_id, guild_id), fetch_one=True)
+        return fetch
+
+    # get list of current tickets
+    def ticket_setup_fetchall(self, guild_id: int):
+        query = "SELECT * FROM ticket_setup WHERE guild_id = ?"
+        fetch = self._exec_query(query, (guild_id,), fetch_all=True)
+        return fetch
+
+    # role modifier to tickets
+    def ticket_setup_role_modifier(self, guild_id: int, ticket_id: int, roles: str):
+        query = "UPDATE ticket_setup SET roles = ? WHERE id = ? AND guild_id = ?"
+        self._exec_query(query, (roles, ticket_id, guild_id), commit=True)
+        return self.ticket_setup_fetch(guild_id, ticket_id)
+
+    def ticket_find_setup(self, guild_id: int, message_id: int):
+        query = "SELECT * FROM ticket_setup WHERE message_id = ?"
+        fetch = self._exec_query(query, (message_id,), fetch_one=True)
+        return fetch
+
+    @staticmethod
+    def _timestamp():
+        return int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+    def _load_controls(self):
+        self.ban = BanController(self)
+        self.kick = KickController(self)
+        self.timeout = TimeoutController(self)
