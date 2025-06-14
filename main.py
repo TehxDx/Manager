@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import os, platform, asyncio
 import logging
 from lib.database.database import ManagerDB
+from views.ticket import TicketView
 
 # setup logging
 logging.basicConfig(
@@ -31,10 +32,8 @@ class ManagerBot(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.config = {
-            "modlog": os.getenv("MOD_ENABLED"),
             "modlog_channel": int(os.getenv("MOD_CHANNEL")),
-            "modlog_guild": int(os.getenv("MOD_GUILD")),
-            "botname": os.getenv("BOTNAME")
+            "modlog_guild": int(os.getenv("MOD_GUILD"))
         }
         self.database = ManagerDB()
 
@@ -48,6 +47,7 @@ class ManagerBot(commands.Bot):
     async def setup_hook(self) -> None:
         await self.load_cogs()
         await self.tree.sync()
+        self.add_view(TicketView(bot=self))
 
     async def load_cogs(self):
         for file in os.listdir("./cogs"):
