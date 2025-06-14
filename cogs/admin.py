@@ -21,6 +21,7 @@ class Admin(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
+        self.database = bot.database
         # unit map for timeout
         # that way I can limit the if/elif statements and merge it to 1 simple if
         self.unit_map = {
@@ -31,7 +32,7 @@ class Admin(commands.Cog):
             "w": "weeks"
         }
 
-    # kick - kicks a user from the guild and adds to lowDB
+    # kick - kicks a user from the guild and adds to the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(kick_members=True)
     @admin_action.command(name="kick", description="Kick a user from the server")
@@ -42,22 +43,21 @@ class Admin(commands.Cog):
     async def kick(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
             await user.kick(reason=reason)
-            self.bot.database.add_user_kicked(
-                discord_id=user.id,
+            self.database.kick.add_kick(
+                user_id=user.id,
                 discord_name=user.name,
                 guild_id=interaction.guild.id,
                 reason=reason,
                 kicked_by=interaction.user.id,
-                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
             )
-            logging.info(f"User {user.name} has been kicked by {interaction.user.name} for reason: {reason}")
+            logging.info(f"[+]User {user.name} has been kicked by {interaction.user.name} for reason: {reason}")
             await interaction.response.send_message(f"User {user.mention} has been kicked.", ephemeral=True)
         except discord.Forbidden or discord.NotFound:
             # lets log that we cant kick a user
-            logging.error(f"Kick failed for user {user.name}")
+            logging.error(f"[!] Kick failed for user {user.name}")
             await interaction.response.send_message("I don't have permission to kick this user.", ephemeral=True)
 
-    # ban - bans a user and insert the data to the lowDB
+    # ban - bans a user and insert the data to the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
     @admin_action.command(name="ban", description="Ban a user from the server")
@@ -68,22 +68,21 @@ class Admin(commands.Cog):
     async def ban(self, interaction: discord.Interaction, user: discord.Member, reason: str):
         try:
             await user.ban(reason=reason)
-            self.bot.database.add_user_banned(
+            self.database.ban.add_ban(
                 guild_id=interaction.guild.id,
-                discord_id=user.id,
+                user_id=user.id,
                 discord_name=user.name,
-                reason=reason,
                 banned_by=interaction.user.id,
-                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+                reason=reason
             )
-            logging.info(f"User {user.name} has been banned by {interaction.user.name} for reason: {reason}")
+            logging.info(f"[+] User {user.name} has been banned by {interaction.user.name} for reason: {reason}")
             await interaction.response.send_message(f"User {user.mention} has been banned.", ephemeral=True)
         except discord.Forbidden or discord.NotFound:
             # lets log that we cant ban the user
-            logging.error(f"Ban failed for user {user.name}")
+            logging.error(f"[!] Ban failed for user {user.name}")
             await interaction.response.send_message("I don't have permission to ban this user.", ephemeral=True)
 
-    # unban - unbans a user and removes them from banned in lowDB
+    # unban - unbans a user and removes them from banned the database
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(ban_members=True)
     @admin_remove.command(name="ban", description="Unban a user from the server")
@@ -92,10 +91,8 @@ class Admin(commands.Cog):
     )
     async def unban(self, interaction: discord.Interaction, user: discord.User):
         try:
-            banned = self.bot.database.get("banned", [])
-            update = [user_list for user_list  in banned if user_list["discord_id"] != user.id]
-            self.bot.database["banned"] = update
             await interaction.guild.unban(user)
+            self.database.ban.unban(guild_id=interaction.guild.id, user_id=user.id)
             logging.info(f"User {user.name} has been unbanned by {interaction.user.name}")
             await interaction.response.send_message(f"User {user.mention} has been unbanned.", ephemeral=True)
         except discord.NotFound or discord.Forbidden:
@@ -144,34 +141,33 @@ class Admin(commands.Cog):
             # lets convert the timestamp to unix and int it
             unix_timestamp = int((datetime.datetime.now(datetime.timezone.utc) + length).timestamp())
             await user.timeout(length, reason=reason)
-            self.bot.database.add_user_timeout(
-                discord_id=user.id,
+            self.database.timeout.add_timeout(
+                user_id=user.id,
                 discord_name=user.name,
                 guild_id=interaction.guild.id,
                 reason=reason,
                 timeout_by=interaction.user.id,
-                timeout_until=unix_timestamp,
-                timestamp=int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+                timeout_until=unix_timestamp
             )
-            logging.info(f"User {user.name} has been timed out by {interaction.user.name} for reason: {reason}")
+            logging.info(f"[+] User {user.name} has been timed out by {interaction.user.name} for reason: {reason}")
             return await interaction.response.send_message(
                 f"User {user.mention} has been timed out until <t:{unix_timestamp}:F>.",
                 ephemeral=True
             )
         except ValueError:
-            logging.error(f"Invalid duration: {duration}")
+            logging.error(f"[!] Invalid duration: {duration} from {interaction.user.name}")
             return await interaction.response.send_message(
                 "Invalid duration. Please use a number followed by a unit.", ephemeral=True
             )
         except discord.Forbidden or discord.NotFound:
-            logging.error(f"Timeout failed for user {user.name}")
+            logging.error(f"[!] Timeout failed for user {user.name} from {interaction.user.name}")
             return await interaction.response.send_message(
                 "I don't have permission to timeout this user.", ephemeral=True
             )
         # i thought about combining this exception with the above
         # but this provides better logging
         except discord.HTTPException as e:
-            logging.error(f"Timeout failed for user {user.name}: {e}")
+            logging.error(f"[!] Timeout failed for user {user.name}: {e}")
             return await interaction.response.send_message(
                 "An error occurred while trying to timeout this user.", ephemeral=True
             )
@@ -183,7 +179,7 @@ class Admin(commands.Cog):
     @admin_list.command(name="bans", description="List all banned users")
     async def listbanned(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        fetch = self.bot.database.fetch_ban_list(guild_id=interaction.guild.id)
+        fetch = self.database.ban.ban_list(guild_id=interaction.guild.id)
         if not fetch:
             return await interaction.followup.send("There is no bans in the database to list.")
         embed = embed_loader(name="bans", file="embeds/core.json")
@@ -211,7 +207,7 @@ class Admin(commands.Cog):
     @admin_list.command(name="kicks", description="List all kicked users")
     async def listkicked(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        kicked = self.bot.database.fetch_kick_list(guild_id=interaction.guild.id)
+        kicked = self.database.kick.kick_list(guild_id=interaction.guild.id)
         if not kicked:
             return await interaction.followup.send("There is no kicks in the database to list.")
         embed = embed_loader(name="kicks", file="embeds/core.json")
@@ -239,7 +235,7 @@ class Admin(commands.Cog):
     @admin_list.command(name="timeouts", description="List all timed out users")
     async def listtimeouts(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        timeouts = self.bot.database.fetch_timeout_list(guild_id=interaction.guild.id)
+        timeouts = self.database.timeout.timeout_list(guild_id=interaction.guild.id)
         if not timeouts:
             return await interaction.followup.send("There is no timeouts in the database to list.")
         embed = embed_loader(name="timeouts", file="embeds/core.json")
@@ -353,10 +349,10 @@ class Admin(commands.Cog):
             embed = discord.Embed(
                 title=":no_entry_sign: Missing Bot Permissions",
                 description="\n".join(f"• `{perm}`" for perm in missing),
-                color=self.bot.config["embed_color"]
+                color=discord.Color.brand_red() # correction
             )
             embed.set_footer(text="Permission Checker - ManagerBot")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return await interaction.response.send_message(embed=embed, ephemeral=True)
         return await interaction.response.send_message("All permissions are met.", ephemeral=True)
 
 async def setup(bot):
