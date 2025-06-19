@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS ticket_setup (
     category INTEGER NOT NULL,
     channel INTEGER NOT NULL,
     roles TEXT,
+    embed TEXT DEFAULT 'ticket_example',
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
 
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS tickets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_tickets_guild_id ON tickets (guild_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_discord_id ON tickets (discord_id);
+CREATE INDEX IF NOT EXISTS idx_tickets_discord_id ON tickets (discord_id, status);
 
 CREATE TABLE IF NOT EXISTS banned (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
