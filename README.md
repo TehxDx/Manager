@@ -10,29 +10,29 @@
 
 # Commands
 - ### /admin
-  - **action**
-    - ban
-    - kick
-    - timeout
-  - **list**
-    - bans 
-    - kicks
-    - timeouts
-  - **remove**
-    - ban
-  - **embed**
-    - help
-  - **purge** 
-  - **permissions**  _If you are having errors, please use this commands_
+  - `action`
+    - `ban`
+    - `kick`
+    - `timeout`
+  - `list`
+    - `bans`
+    - `kicks`
+    - `timeouts`
+  - `remove`
+    - `ban`
+  - `embed`
+    - `help`
+  - `purge` 
+  - `permissions` _If you are having errors, please use this commands_
 - ### /ticket
-  - **setup**
-    - **create**
+  - `setup`
+    - `create`
       - *Please follow the guide below on this.*
-    - **add_role** 
+    - `add_role`
       - *Adds a role to a specified Ticket setup.*
-    - **remove_role**
+    - `remove_role`
       - *Removes a role from a specified Ticket setup.*
-    - **list**
+    - `list`
       - *Shows a list of current Ticket setups.*
 
 > [!IMPORTANT]
@@ -85,7 +85,7 @@ This is the welcome message that gets sent in a newly created ticket channel.
 Once your embeds are ready, you can run the setup command in your server. This command will post the main ticket panel in the channel you specify.
 
 #### **Command Syntax**
-`/ticket setup embed:[name] channel:[channel] category:[category] ticket_embed:[name]`
+`/ticket setup create embed:[name] channel:[channel] category:[category] ticket_embed:[name]`
 #### **Parameters**
 - `embed`
   - The name of your ticket panel embed from `embeds/core.json`.
@@ -105,7 +105,7 @@ After running the command, you will get a success message that includes a **Tick
 By default, no one besides the ticket creator can see a new ticket. You need to assign roles (e.g., "Support Staff") that should have access to view and manage tickets.
 
 #### **Command Syntax**
-`/ticket add_role ticket_id:[ID] role:[role]`
+`/ticket setup add_role ticket_id:[ID] role:[role]`
 #### **Parameters**
 - `ticket_id`
   - The ID provided when you created the ticket setup in Step 2.
