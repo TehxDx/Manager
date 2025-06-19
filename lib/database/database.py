@@ -7,6 +7,7 @@ import sqlite3
 import logging
 from lib.database.controllers.ban_control import BanController
 from lib.database.controllers.kick_control import KickController
+from lib.database.controllers.ticket_control import TicketController
 from lib.database.controllers.timeout_control import TimeoutController
 
 
@@ -52,39 +53,11 @@ class ManagerDB:
             logging.error(f"[!] Database initialization failed: {e}")
             exit() # temporary placement
 
-    # ticket database
-    # guild_id, discord_id, message_id, category, channel, roles, timestamp
-    def setup_ticket(self, guild_id: int, discord_id: int, message_id: int, category: int, channel: int, roles: str, timestamp: int):
-        query = '''
-                INSERT INTO ticket_setup(guild_id, discord_id, message_id, category, channel, roles, timestamp) 
-                VALUES (?, ?, ?, ?, ?, ?, ?);
-                '''
-        self._exec_query(query, (guild_id, discord_id, message_id, category, channel, roles, timestamp), commit=True)
-        query2 = "SELECT * FROM ticket_setup WHERE message_id = ?"
-        return self._exec_query(query2, (message_id,), fetch_one=True)
-
-    # ticket add_role
-    def ticket_setup_fetch(self, guild_id: int, ticket_id: int):
-        query = "SELECT * FROM ticket_setup WHERE id = ? AND guild_id = ?"
-        fetch = self._exec_query(query, (ticket_id, guild_id), fetch_one=True)
-        return fetch
-
-    # get list of current tickets
-    def ticket_setup_fetchall(self, guild_id: int):
-        query = "SELECT * FROM ticket_setup WHERE guild_id = ?"
-        fetch = self._exec_query(query, (guild_id,), fetch_all=True)
-        return fetch
-
     # role modifier to tickets
     def ticket_setup_role_modifier(self, guild_id: int, ticket_id: int, roles: str):
         query = "UPDATE ticket_setup SET roles = ? WHERE id = ? AND guild_id = ?"
         self._exec_query(query, (roles, ticket_id, guild_id), commit=True)
         return self.ticket_setup_fetch(guild_id, ticket_id)
-
-    def ticket_find_setup(self, guild_id: int, message_id: int):
-        query = "SELECT * FROM ticket_setup WHERE message_id = ?"
-        fetch = self._exec_query(query, (message_id,), fetch_one=True)
-        return fetch
 
     @staticmethod
     def _timestamp():
@@ -94,3 +67,4 @@ class ManagerDB:
         self.ban = BanController(self)
         self.kick = KickController(self)
         self.timeout = TimeoutController(self)
+        self.ticket = TicketController(self)
