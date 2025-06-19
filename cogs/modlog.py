@@ -18,16 +18,19 @@ def modlog_verify(func):
             if isinstance(arg, discord.Guild):
                 guild = arg
                 break
-            if hasattr(arg, "guild"):
+            if hasattr(arg, "guild") and isinstance(arg.guild, discord.Guild):
                 guild = arg.guild
                 break
+
         if not guild:
-            logging.warning("[ModLog] No guild found in event args")
-            return None
+            # keep seeing this warning fire, however, after alot of probing, I noticed it was only firing when a
+            # ephemeral event happened. so you will see this warning message, anytime the bot sends a ephemeral because
+            # it fires on_message_edit without the guild details in the payload. will most likely remove later.
+            logging.warning(f"[ModLog] No guild found for event '{func.__name__}' | Most likely a ephemeral event. [IGNORE]")
+            return
 
-        if not guild.id != self.guild:
-            return None
-
+        if guild.id != self.guild:
+            return
         return await func(self, *args, **kwargs)
     return wrapper
 
