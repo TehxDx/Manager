@@ -11,6 +11,7 @@ import os, platform, asyncio
 import logging
 from lib.database.database import ManagerDB
 from views.ticket import TicketView
+from views.ticket_close import TicketClose
 
 # setup logging
 logging.basicConfig(
@@ -48,6 +49,7 @@ class ManagerBot(commands.Bot):
         await self.load_cogs()
         await self.tree.sync()
         self.add_view(TicketView(bot=self))
+        self.add_view(TicketClose(bot=self))
 
     async def load_cogs(self):
         for file in os.listdir("./cogs"):
