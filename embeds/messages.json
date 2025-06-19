@@ -1,5 +1,5 @@
 {
-  "hello": {
+  "example": {
     "title": "Example Embed",
     "description": "Example Description",
     "color": "7c2715",
@@ -32,9 +32,14 @@
     ],
     "footer": {
       "text": "Footer text here",
-      "icon": "https://cdn.discordapp.com/avatars/562016951225024522/3f198c9e839a9e8b54505b3934e9abbc.png"
+      "icon": "https://placehold.co/200x200.png"
     },
-    "thumbnail": "https://cdn.discordapp.com/avatars/562016951225024522/3f198c9e839a9e8b54505b3934e9abbc.png",
-    "image": "https://cdn.discordapp.com/avatars/562016951225024522/3f198c9e839a9e8b54505b3934e9abbc.png"
+    "thumbnail": "https://placehold.co/200x200.png",
+    "image": "https://placehold.co/500x200.png"
+  },
+  "new_ticket": {
+    "title": "Example New Ticket",
+    "description": "Example text for the user to see when they open a new ticket",
+    "color": "7c2715"
   }
 }
