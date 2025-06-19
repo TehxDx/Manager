@@ -5,6 +5,7 @@
     - [embed]: grabs the embed under [embed] from core.json
     - [channel]: what channel to post said [embed] to
     - [category]: what category to create new tickets in
+    - [ticket_embed]: what embed to send on new ticket creation
 """
 import os
 import logging
