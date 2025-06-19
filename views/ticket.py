@@ -25,7 +25,7 @@ class TicketView(ui.View):
         if verify:
             for items in verify:
                 # if the status shows 1 (True), lets check it
-                if items[4] == 1:
+                if items[5] == 1:
                     guild = self.bot.get_guild(items[1])
                     channel = guild.get_channel(items[3])
                     if channel:
@@ -88,8 +88,10 @@ class TicketView(ui.View):
                     guild_id=interaction.guild.id,
                     user_id=interaction.user.id,
                     channel_id=new_channel.id,
+                    ticket_setup=fetch[0],
                     status=True
                 )
+                logging.info("[+] Ticket Opened Successfully")
                 return await interaction.response.send_message("A ticket has been opened!", ephemeral=True)
             except discord.HTTPException or discord.Forbidden as e:
                 logging.error(f"[!] Error creating a ticket channel: {e}")
