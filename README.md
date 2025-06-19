@@ -25,14 +25,15 @@
   - **purge** 
   - **permissions**  _If you are having errors, please use this commands_
 - ### /ticket
-  - **setup** 
-    - Please follow the guide below on this.
-  - **add_role** 
-    - Adds a role to a specified Ticket setup.
-  - **remove_role**
-    - Removes a role from a specified Ticket setup.
-  - **list**
-    - Shows a list of current Ticket setups.
+  - **setup**
+    - **create**
+      - *Please follow the guide below on this.*
+    - **add_role** 
+      - *Adds a role to a specified Ticket setup.*
+    - **remove_role**
+      - *Removes a role from a specified Ticket setup.*
+    - **list**
+      - *Shows a list of current Ticket setups.*
 
 > [!IMPORTANT]
 > These may change as the bot grows in development. Please keep an eye on the list.

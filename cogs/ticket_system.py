@@ -19,6 +19,7 @@ from lib.embed_build import embed_loader
 class TicketSystem(commands.Cog):
 
     ticket = app_commands.Group(name="ticket", description="Ticket system")
+    setup = app_commands.Group(name="setup", description="Ticket System Setup", parent=ticket)
 
     def __init__(self, bot):
         self.bot = bot
@@ -35,14 +36,14 @@ class TicketSystem(commands.Cog):
         embed_links=True, # send embeded links
         manage_permissions=True # this is critical as the bot needs to manage permissions
     )
-    @ticket.command(name="setup", description="Setup ticket system")
+    @setup.command(name="create", description="Setup ticket system")
     @app_commands.describe(
         embed="Embed Name",
         channel="Channel Name",
         category="What category is the tickets to be created in?",
         ticket_embed="Ticket Embed to post for new tickets (embeds/messages.json)"
     )
-    async def setup(self, interaction: discord.Interaction, embed: str, channel: discord.TextChannel, category: discord.CategoryChannel, ticket_embed: str):
+    async def create(self, interaction: discord.Interaction, embed: str, channel: discord.TextChannel, category: discord.CategoryChannel, ticket_embed: str):
         await interaction.response.defer(ephemeral=True)
         embed = embed_loader(name=embed,  file="embeds/core.json")
         ticket_send_embed = embed_loader(name=ticket_embed, file="embeds/messages.json")
@@ -81,7 +82,7 @@ class TicketSystem(commands.Cog):
 
     @app_commands.guild_only
     @app_commands.checks.has_permissions(administrator=True)
-    @ticket.command(name="add_role", description="Add a role to existing ticket setup")
+    @setup.command(name="add_role", description="Add a role to existing ticket setup")
     @app_commands.describe(ticket_id="Ticket ID", role="Role Name")
     async def add_role(self, interaction: discord.Interaction, ticket_id: int, role: discord.Role):
         await interaction.response.defer(ephemeral=True)
@@ -117,7 +118,7 @@ class TicketSystem(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
-    @ticket.command(name="remove_role", description="Remove a role to existing ticket setup")
+    @setup.command(name="remove_role", description="Remove a role to existing ticket setup")
     @app_commands.describe(ticket_id="Ticket ID", role="Role Name")
     async def remove_role(self, interaction: discord.Interaction, ticket_id: int, role: discord.Role):
         await interaction.response.defer(ephemeral=True)
@@ -154,7 +155,7 @@ class TicketSystem(commands.Cog):
 
     @app_commands.guild_only()
     @app_commands.checks.has_permissions(administrator=True)
-    @ticket.command(name="list", description="List ticket setups")
+    @setup.command(name="list", description="List ticket setups")
     async def list_ticket_setups(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         fetch = self.database.ticket.ticket_setup_fetch(guild_id=interaction.guild.id, fetch_all=True)
