@@ -40,15 +40,20 @@ class TicketController:
         self.database._exec_query(query, (guild_id, message_id), commit=True)
         return
 
-    def ticket_add(self, guild_id: int, user_id: int, channel_id: int, status: bool):
+    def ticket_add(self, guild_id: int, user_id: int, channel_id: int, ticket_setup: int, status: bool):
         timestamp = self.database._timestamp()
-        query = "INSERT INTO tickets (guild_id, discord_id, channel, status, created_at) VALUES (?, ?, ?, ?, ?)"
-        self.database._exec_query(query, (guild_id, user_id, channel_id, status, timestamp), commit=True)
+        query = "INSERT INTO tickets (guild_id, discord_id, channel, ticket_setup, status, created_at) VALUES (?, ?, ?, ?, ?, ?)"
+        self.database._exec_query(query, (guild_id, user_id, channel_id, ticket_setup, status, timestamp), commit=True)
         return
 
     def ticket_search(self, guild_id: int, user_id: int):
         query = "SELECT * FROM tickets WHERE guild_id = ? AND discord_id = ?"
         fetch = self.database._exec_query(query, (guild_id, user_id), fetch_all=True)
+        return fetch
+
+    def ticket_search_spec(self, guild_id: int, channel_id: int):
+        query = "SELECT * FROM tickets WHERE guild_id = ? AND channel = ?"
+        fetch = self.database._exec_query(query, (guild_id, channel_id), fetch_one=True)
         return fetch
 
     def ticket_update(self, guild_id: int, user_id: int, channel_id: int, status: bool):
