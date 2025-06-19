@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS tickets (
     guild_id INTEGER NOT NULL,
     discord_id INTEGER NOT NULL,
     channel INTEGER NOT NULL,
+    ticket_setup INTEGER NOT NULL,
     status BOOLEAN NOT NULL CHECK (status IN (0, 1)),
     created_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now'))
 );
