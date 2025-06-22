@@ -12,6 +12,7 @@ import logging
 from lib.database.database import ManagerDB
 from views.ticket import TicketView
 from views.ticket_close import TicketClose
+from views.captcha_button import CaptchaButton
 
 # setup logging
 logging.basicConfig(
@@ -36,6 +37,7 @@ class ManagerBot(commands.Bot):
             "modlog_channel": int(os.getenv("MOD_CHANNEL")),
             "modlog_guild": int(os.getenv("MOD_GUILD"))
         }
+        self.pending_captcha = {} # captcha system
         self.database = ManagerDB()
 
         """
@@ -50,6 +52,7 @@ class ManagerBot(commands.Bot):
         await self.tree.sync()
         self.add_view(TicketView(bot=self))
         self.add_view(TicketClose(bot=self))
+        self.add_view(CaptchaButton(bot=self))
 
     async def load_cogs(self):
         for file in os.listdir("./cogs"):

@@ -109,8 +109,25 @@ By default, no one besides the ticket creator can see a new ticket. You need to 
 #### **Parameters**
 - `ticket_id`
   - The ID provided when you created the ticket setup in Step 2.
-    - *Tip: If you lose the ID, you can find it by running `/ticket list`.*
+    - *Tip: If you lose the ID, you can find it by running `/ticket setup list`.*
 - `role`
   - The role you want to grant access to. Simply select it from the list that appears.
 
 You can run this command multiple times to add all necessary staff roles.
+
+---
+
+### **Step 4: Remove Staff Access**
+
+To remove a role from accessing tickets. The below will guide you through this.
+
+#### **Command Syntax**
+`/ticket setup remove_role ticket_id:[ID] role:[role]`
+#### **Parameters**
+- `ticket_id`
+  - The ID provided when you created the ticket setup in Step 2.
+    - *Tip: If you lose the ID, you can find it by running `/ticket setup list`.*
+- `role`
+  - The role you want to remove access to. Simply select it from the list that appears.
+
+You can run this command multiple times to remove specific staff roles.

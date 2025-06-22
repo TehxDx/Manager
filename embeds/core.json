@@ -8,6 +8,33 @@
       "text": "Ticket System"
     }
   },
+  "captcha": {
+    "title": "Captcha Verification System",
+    "description": "**Please read all the server rules below**\n\u200b\n- Rule 1\n- Rule 2\n- Rule 3 \n- Rule 4",
+    "color": "ebf702",
+    "fields": [
+      {
+        "name": "Rule #1",
+        "value": "Rule one details",
+        "inline": false
+      },
+      {
+        "name": "Rule #2",
+        "value": "Rule two details",
+        "inline": false
+      },
+      {
+        "name": "Rule #3",
+        "value": "Rule three details",
+        "inline": false
+      },
+      {
+        "name": "Rule #4",
+        "value": "Rule four details",
+        "inline": false
+      }
+    ]
+  },
   "bans": {
     "title": ":stop_sign: Banned Users",
     "description": "# Last 5 Bans",
