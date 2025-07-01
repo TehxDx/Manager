@@ -58,6 +58,11 @@ class TicketView(ui.View):
                     send_messages=True,
                     view_channel=True,
                     read_message_history=True
+                ),
+                interaction.guild.me: discord.PermissionOverwrite(
+                    view_channel=True,
+                    send_messages=True,
+                    embed_links=True
                 )
             }
             if roles:
