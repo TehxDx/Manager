@@ -27,9 +27,15 @@ class Captcha(commands.Cog):
         channel = guild.get_channel(int(self.verify_channel))
         embed = embed_loader(name="captcha", file="embeds/core.json")
         if embed:
-            view = CaptchaButton(bot=self)
-            await channel.send(embed=embed, view=view)
-            await interaction.response.send_message("I've posted it", ephemeral=True)
+            try:
+                view = CaptchaButton(bot=self)
+                await channel.send(embed=embed, view=view)
+                await interaction.response.send_message("I've posted it", ephemeral=True)
+            except discord.Forbidden:
+                logging.info(f"[!][Captcha] I do not have permissions to post in {channel.name}")
+                return
+            except discord.NotFound:
+                logging.info(f"[!][Captcha] {channel.name} not found, check your .env settings")
 
     # create a listener for the DM
     @commands.Cog.listener()
@@ -57,7 +63,7 @@ class Captcha(commands.Cog):
                 del self.bot.pending_captcha[message.author.id] # removes them from the self.pending_captcha
                 return
             else:
-                logging.error(f"[!] Could not verify {message.author.name}'s captcha.")
+                logging.error(f"[!][Captcha] Could not verify {message.author.name}'s captcha.")
                 return await message.channel.send("There was an internal error, please contact support.")
         else:
             return await message.channel.send("Incorrect code! Please try again.")
