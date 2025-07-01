@@ -34,7 +34,7 @@
       - *Removes a role from a specified Ticket setup.*
     - `list`
       - *Shows a list of current Ticket setups.*
-- ### /captcha
+- ### [/captcha](https://github.com/TehxDx/Manager?tab=readme-ov-file#-captcha-verification)
   - `setup`
     - `post`
       - *Post the verify message in the channel set in the `env`*
