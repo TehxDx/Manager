@@ -56,29 +56,32 @@ class TicketSystem(commands.Cog):
             return await interaction.followup.send(f"Please check the spelling on your embed to send to new tickets.\n"
                                                    f"{ticket_embed} - Not found in `embeds/messages.json`")
         view = TicketView(self.bot)
-        message = await channel.send(embed=embed, view=view)
-        push = self.database.ticket.ticket_setup(
-            guild_id=interaction.guild.id,
-            discord_id=interaction.user.id,
-            message_id=message.id,
-            category=category.id,
-            channel=channel.id,
-            roles="[]",
-            ticket_embed=ticket_embed
-        )
-        user = self.bot.get_user(push[2]) # get user object
-        get_chan = self.bot.get_channel(push[5]) # get channel object
-        return await interaction.followup.send(f"# Ticket Setup Complete\n"
-                                        f"> Posted embed with button to {channel.mention}\n"
-                                        f"> Category that new tickets will be created in: `{category.name}`\n"
-                                        f"# Next step\n"
-                                        f"> Add what roles can manage the ticket\n"
-                                        f"> - /ticket add_roles [id] [role]\n"
-                                        f"\u200b\n"
-                                        f"> :card_box: Ticket System #**{push[0]}**\n"
-                                        f"> :bust_in_silhouette: Created by: {user.mention} | `{push[2]}`\n"
-                                        f"> :envelope_with_arrow: Channel: {get_chan.mention} | `{push[5]}`\n"
-                                        f"> :white_medium_square: Category for tickets: {category.mention} | `{push[4]}`\n")
+        try:
+            message = await channel.send(embed=embed, view=view)
+            push = self.database.ticket.ticket_setup(
+                guild_id=interaction.guild.id,
+                discord_id=interaction.user.id,
+                message_id=message.id,
+                category=category.id,
+                channel=channel.id,
+                roles="[]",
+                ticket_embed=ticket_embed
+            )
+            user = self.bot.get_user(push[2]) # get user object
+            get_chan = self.bot.get_channel(push[5]) # get channel object
+            return await interaction.followup.send(f"# Ticket Setup Complete\n"
+                                            f"> Posted embed with button to {channel.mention}\n"
+                                            f"> Category that new tickets will be created in: `{category.name}`\n"
+                                            f"# Next step\n"
+                                            f"> Add what roles can manage the ticket\n"
+                                            f"> - /ticket add_roles [id] [role]\n"
+                                            f"\u200b\n"
+                                            f"> :card_box: Ticket System #**{push[0]}**\n"
+                                            f"> :bust_in_silhouette: Created by: {user.mention} | `{push[2]}`\n"
+                                            f"> :envelope_with_arrow: Channel: {get_chan.mention} | `{push[5]}`\n"
+                                            f"> :white_medium_square: Category for tickets: {category.mention} | `{push[4]}`\n")
+        except discord.NotFound or discord.Forbidden as e:
+            return await interaction.followup.send(f"I do not have the correct permissions.\n{e}")
 
     @app_commands.guild_only
     @app_commands.checks.has_permissions(administrator=True)
