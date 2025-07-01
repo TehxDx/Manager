@@ -34,6 +34,10 @@
       - *Removes a role from a specified Ticket setup.*
     - `list`
       - *Shows a list of current Ticket setups.*
+- ### /captcha
+  - `setup`
+    - `post`
+      - *Post the verify message in the channel set in the `env`*
 
 > [!IMPORTANT]
 > These may change as the bot grows in development. Please keep an eye on the list.
@@ -131,3 +135,19 @@ To remove a role from accessing tickets. The below will guide you through this.
   - The role you want to remove access to. Simply select it from the list that appears.
 
 You can run this command multiple times to remove specific staff roles.
+
+---
+### 🔒 Captcha Verification
+
+> [!IMPORTANT]
+> You **MUST** configure your `.env` file for this to work.
+> 
+> `CAPTCHA_SYSTEM=` | True/False <br>
+> `CAPTCHA_CHANNEL=` | Where the message will be posted <br>
+> `CAPTCHA_ROLE=` | Role ID that will be given to the user
+
+#### **Command Syntax**
+`/captcha setup post`
+
+#### **Parameters**
+None, these are set in your `.env` file!
