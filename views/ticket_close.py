@@ -12,6 +12,8 @@ class TicketClose(discord.ui.View):
 
     @ui.button(label="Close Ticket", style=ButtonStyle.red, custom_id="persistent_view:ticket_close")
     async def close_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # check if the user has administrator permissions
+        checks = interaction.user.guild_permissions.administrator
         # need to get the roles the interaction user has
         roles = []
         for role in interaction.user.roles:
@@ -22,7 +24,7 @@ class TicketClose(discord.ui.View):
             # grab the ticket setup data to get roles allowed to close
             ticket_setup = self.database.ticket.ticket_setup_fetch(ticket_id=fetch[4], guild_id=interaction.guild.id)
             ticket_roles = json.loads(ticket_setup[6])
-            if set(roles) & set(ticket_roles):
+            if set(roles) & set(ticket_roles) or checks:
                 guild = self.bot.get_guild(fetch[1])
                 channel = guild.get_channel(fetch[3])
                 # update the ticket to closed status
