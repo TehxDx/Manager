@@ -24,7 +24,7 @@
     - `help`
   - `purge` 
   - `permissions` _If you are having errors, please use this commands_
-- ### /ticket
+- ### [/ticket](https://github.com/TehxDx/Manager?tab=readme-ov-file#%EF%B8%8F-ticket-system-setup-guide)
   - `setup`
     - `create`
       - *Please follow the guide below on this.*
