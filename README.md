@@ -37,7 +37,20 @@
 - ### [/captcha](https://github.com/TehxDx/Manager?tab=readme-ov-file#-captcha-verification)
   - `setup`
     - `post`
-      - *Post the verify message in the channel set in the `env`*
+      - *Post the verify message in the channel set in the `.env`*
+- `/joke`
+  - Pull's a random joke from an API
+- `/dadjoke`
+  - Pull's a random dad joke from an API
+- `/rps`
+  - Syntax `/rps selection:[rock/paper/scissors]`
+    - Rock, paper, scissors game
+- `/coinflip`
+  - Syntax `/coinflip side:[heads/tails]`
+    - Guess what side the coin will land on
+- `/8ball`
+  - Syntax `/8ball question:[question you want to ask]`
+    - Mystical reading will be given
 
 > [!IMPORTANT]
 > These may change as the bot grows in development. Please keep an eye on the list.
