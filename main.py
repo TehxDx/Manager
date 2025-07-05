@@ -33,20 +33,18 @@ class ManagerBot(commands.Bot):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if os.getenv("MOD_ENABLED"):
+        if os.getenv("MOD_ENABLED") is not None and os.getenv("MOD_ENABLED").lower() == "true":
             self.config = {
                 "modlog_channel": int(os.getenv("MOD_CHANNEL")),
                 "modlog_guild": int(os.getenv("MOD_GUILD"))
             }
         self.pending_captcha = {} # captcha system
-        self.database = ManagerDB()
+        self.database = ManagerDB() # init the database
 
         """
             Note: Removal of lowDB support - Since it has limitations at the moment and requires me to rebuild it,
             lowDB will have to be a project for another time
         """
-
-        logging.info(self.config)
 
     async def setup_hook(self) -> None:
         await self.load_cogs()
