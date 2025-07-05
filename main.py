@@ -33,10 +33,11 @@ class ManagerBot(commands.Bot):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.config = {
-            "modlog_channel": int(os.getenv("MOD_CHANNEL")),
-            "modlog_guild": int(os.getenv("MOD_GUILD"))
-        }
+        if os.getenv("MOD_ENABLED"):
+            self.config = {
+                "modlog_channel": int(os.getenv("MOD_CHANNEL")),
+                "modlog_guild": int(os.getenv("MOD_GUILD"))
+            }
         self.pending_captcha = {} # captcha system
         self.database = ManagerDB()
 
