@@ -1,10 +1,9 @@
 """
     Games COG
 """
-import discord
 from discord.ext import commands
 from discord import app_commands
-import os, random, logging
+import os, random, logging, discord
 
 class Games(commands.Cog):
 

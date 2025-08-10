@@ -1,14 +1,10 @@
 """
     Admin Commands
 """
-import datetime
-import os
-import discord
+import os, datetime, discord, logging
 from discord.ext import commands
 from discord import app_commands
-import logging
 from lib.embed_build import embed_loader
-from views.ticket import TicketView
 
 class Admin(commands.Cog):
 

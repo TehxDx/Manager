@@ -1,11 +1,9 @@
 """
     Captcha Verification System
 """
-import discord
+import discord, os, logging
 from discord.ext import commands
 from discord import app_commands
-import os
-import logging
 from lib.embed_build import embed_loader
 from views.captcha_button import CaptchaButton
 

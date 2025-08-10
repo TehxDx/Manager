@@ -7,12 +7,9 @@
     - [category]: what category to create new tickets in
     - [ticket_embed]: what embed to send on new ticket creation
 """
-import os
-import logging
-import discord
+import os, logging, discord, json
 from discord.ext import commands
 from discord import app_commands
-import json
 from views.ticket import TicketView
 from lib.embed_build import embed_loader
 

@@ -7,8 +7,7 @@
 import discord
 from discord.ext import commands
 from dotenv import load_dotenv
-import os, platform, asyncio
-import logging
+import os, platform, asyncio, logging
 from lib.database.database import ManagerDB
 from views.ticket import TicketView
 from views.ticket_close import TicketClose

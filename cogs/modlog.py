@@ -1,12 +1,9 @@
 """
     Modlog Cog
 """
-import discord
+import discord, logging, functools, os
 from discord.ext import commands
-import logging
-import functools
 from datetime import datetime
-import os
 
 # was looking for a solution, so code wasnt repetitive, found this on stackoverflow and adjusted to my needs.
 # https://stackoverflow.com/questions/739654/how-to-make-function-decorators-with-optional-arguments/739680#739680
