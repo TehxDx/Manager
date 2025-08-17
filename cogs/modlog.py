@@ -243,11 +243,13 @@ class Modlog(commands.Cog):
             embed = discord.Embed(
                 title="Member Joined",
                 description=f"**Member**: {member.mention}\n"
+                            f"**Member Name**: `{member.name}`\n"
                             f"**Member ID**: `{member.id}`\n"
                             f"**Account Created**: <t:{unix_time}:R>\n"
                             f"**Joined Server**: <t:{joined_time}:R>\n",
                 color=discord.Color.green()
             )
+            embed.set_thumbnail(url=member.avatar)
             await mod_channel.send(embed=embed)
         else:
             logging.error(f"[Member Joined] Failed to send modlog: channel not found")
@@ -263,10 +265,12 @@ class Modlog(commands.Cog):
             embed = discord.Embed(
                 title="Member Left",
                 description=f"**Member**: {member.mention}\n"
+                            f"**Member Name**: `{member.name}`\n"
                             f"**Member ID**: `{member.id}`\n"
                             f"**Left Server**: <t:{unix_time}:R>\n",
                 color=discord.Color.brand_red()
             )
+            embed.set_thumbnail(url=member.avatar)
             await mod_channel.send(embed=embed)
         else:
             logging.error(f"[Member Left] Failed to send modlog: channel not found")
