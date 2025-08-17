@@ -3,10 +3,9 @@
         Dad Jokes powered by: https://icanhazdadjoke.com/
         Jokes powered by: https://jokeapi.dev/
 """
-import discord
 from discord import app_commands
 from discord.ext import commands
-import os, random, logging, requests
+import os, random, logging, requests, discord
 
 class Jokes(commands.Cog):
 
